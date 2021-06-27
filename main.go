@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/bsdlp/discord-interactions-go/interactions"
+	"github.com/bwmarrin/discordgo"
 	"github.com/localthomas/discord-rsvp/discord"
 )
 
@@ -33,6 +34,8 @@ func main() {
 	}
 
 	go func() {
+		var session *discordgo.Session
+
 		tmpSend := false
 		// never ending loop that executes tasks
 		for {
@@ -56,20 +59,23 @@ func main() {
 				}
 			}
 
-			if !tmpSend && state.AuthorizationToken != "" {
-				client := discord.NewWebhookClient(
-					state.WebhookID,
-					state.WebhookToken,
-					state.AuthorizationTokenType+" "+state.AuthorizationToken,
-					config.ThisInstanceURL,
-					Version,
-				)
+			if session == nil && state.AuthorizationToken != "" {
+				newSession, err := discordgo.New(state.AuthorizationTokenType + " " + state.AuthorizationToken)
+				if err != nil {
+					log.Fatalf("could not create session: %v\n", err)
+				} else {
+					session = newSession
+				}
+			}
 
-				message := discord.Webhook{
-					Embeds: []discord.WebhookEmbed{
-						{
-							Title:       "Title!",
-							Description: "Description",
+			if !tmpSend && session != nil {
+				message := discord.WebhookWithComponent{
+					WebhookParams: discordgo.WebhookParams{
+						Embeds: []*discordgo.MessageEmbed{
+							{
+								Title:       "Title!",
+								Description: "Description",
+							},
 						},
 					},
 					Components: []discord.Component{
@@ -86,11 +92,19 @@ func main() {
 						},
 					},
 				}
-				err = client.SendWebhook(message)
+				messageReturn, err := discord.SendWebhookWithComponents(
+					session,
+					state.WebhookID,
+					state.WebhookToken,
+					true,
+					message,
+				)
 				if err != nil {
 					log.Fatal(err)
 				}
 				tmpSend = true
+
+				fmt.Println(messageReturn)
 			}
 		}
 	}()
