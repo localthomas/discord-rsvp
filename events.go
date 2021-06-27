@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/localthomas/discord-rsvp/api"
 	"github.com/localthomas/discord-rsvp/discord"
 )
 
@@ -195,13 +196,13 @@ func createGameMessage(gameTitle, gameDescription string) discord.WebhookWithCom
 						Type:     2,
 						Label:    "Add Me",
 						Style:    3, // Green / Success Button
-						CustomID: CustomIDButtonAddUserToGame,
+						CustomID: api.CustomIDButtonAddUserToGame,
 					},
 					{
 						Type:     2,
 						Label:    "Remove Me",
 						Style:    4, // Red / Danger Button
-						CustomID: CustomIDButtonRemoveUserFromGame,
+						CustomID: api.CustomIDButtonRemoveUserFromGame,
 					},
 				},
 			},
