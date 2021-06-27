@@ -8,17 +8,23 @@ Each event then gets one message attached for a game, which are configured globa
 
 ## Installation and Requirements
 
+### Requirements
+
 A Discord [application](https://discord.com/developers/applications) with a configured interactions endpoint URL and an OAuth2 redirect URL.
 
 The URL must follow the following schema:
 
+| Setting | Value |
+| ------- | ----- |
 | Interactions Endpoint URL | `https://example.org` |
 | OAuth2 Redirect URL | `https://example.org/webhook-token` |
 
-The recommended way to install this software is using a container.
-Either build the application yourself via the `Dockerfile` in this repository or download from the GitHub Container Registry `(TODO)`.
+### Installation
 
-Run the container with `docker run -v /path/to/config/file:/config/config.json -v /path/to/storage:/data/ -p 8080:80 TODO`.
+The recommended way to install this software is using a container.
+Either build the application yourself via the `Dockerfile` in this repository or download from the [GitHub Container Registry](https://github.com/localthomas/discord-rsvp/pkgs/container/discord-rsvp) (`ghcr.io/localthomas/discord-rsvp`).
+
+Run the container with `docker run -v /path/to/config/file:/config/config.json -v /path/to/storage:/data/ -p 8080:80 ghcr.io/localthomas/discord-rsvp:latest`.
 The state should be persistent and is stored in the container under `/data`.
 The configuration is accessible in the container via `/config/config.json`.
 
