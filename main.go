@@ -19,6 +19,7 @@ const WebhookTokenEndpoint = "/webhook-token"
 const ConfigFilePath = "config/config.json"
 
 const CustomIDButtonAddUserToGame = "add_user_to_game"
+const CustomIDButtonRemoveUserFromGame = "remove_user_from_game"
 
 func main() {
 	config, err := ReadConfig(ConfigFilePath)
@@ -39,7 +40,6 @@ func main() {
 	go func() {
 		var session *discordgo.Session
 
-		tmpSend := false
 		// never ending loop that executes tasks
 		for {
 			// check if the token needs to be refreshed
@@ -66,49 +66,15 @@ func main() {
 					log.Fatalf("could not create session: %v\n", err)
 				} else {
 					session = newSession
+					session.UserAgent = fmt.Sprintf("DiscordBot (%v, %v)", config.ThisInstanceURL, Version)
 				}
 			}
 
-			if !tmpSend && session != nil {
-				message := discord.WebhookWithComponent{
-					WebhookParams: discordgo.WebhookParams{
-						Embeds: []*discordgo.MessageEmbed{
-							{
-								Title:       "Title!",
-								Description: "Description",
-							},
-						},
-					},
-					Components: []discord.Component{
-						{
-							Type: 1,
-							Components: []discord.Component{
-								{
-									Type:     2,
-									Label:    "Add Me",
-									Style:    3,
-									CustomID: CustomIDButtonAddUserToGame,
-								},
-							},
-						},
-					},
-				}
-				messageReturn, err := discord.SendWebhookWithComponents(
-					session,
-					state.WebhookID,
-					state.WebhookToken,
-					true,
-					message,
-				)
-				if err != nil {
-					log.Fatal(err)
-				}
-				tmpSend = true
-
-				fmt.Println(messageReturn)
+			if session != nil {
+				handleEventScheduling(session, &state, config)
 			}
 
-			time.Sleep(10 * time.Second)
+			time.Sleep(1 * time.Second)
 		}
 	}()
 

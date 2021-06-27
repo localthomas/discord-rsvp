@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 )
 
 // Config can be used to read the configuration of the software
@@ -12,6 +13,13 @@ type Config struct {
 	ThisInstanceURL            string
 	ClientID                   string
 	ClientSecret               string
+	Games                      map[string]string
+	Events                     map[string]Event
+}
+
+type Event struct {
+	FirstTime time.Time
+	Repeat    string
 }
 
 func ReadConfig(path string) (Config, error) {

@@ -19,6 +19,17 @@ type State struct {
 	RefreshToken           string
 	WebhookID              string
 	WebhookToken           string
+	Events                 []RsvpEvent
+}
+
+// RsvpEvent stores the webhook message ids for an event that is currently in the rsvp phase.
+type RsvpEvent struct {
+	Title          string
+	StartsAt       time.Time
+	WebhookID      string
+	WebhookToken   string
+	TitleMessageID string
+	GameMessageIDs map[string]string
 }
 
 func ResumeState() State {
@@ -46,6 +57,30 @@ func (s *State) SetWebhook(id, token string) {
 	s.WebhookID = id
 	s.WebhookToken = token
 	s.save()
+}
+
+func (s *State) AddRsvpEvent(event RsvpEvent) {
+	s.Events = append(s.Events, event)
+	s.save()
+}
+
+func (s *State) RemoveRsvpEvent(title string, startsAt time.Time) {
+	// find the index of the event to delete it
+	index := -1
+	for i, event := range s.Events {
+		if event.Title == title && event.StartsAt == startsAt {
+			index = i
+		}
+	}
+
+	if index >= 0 {
+		if index+1 == len(s.Events) {
+			s.Events = s.Events[:index]
+		} else {
+			s.Events = append(s.Events[:index], s.Events[index+1:]...)
+		}
+		s.save()
+	}
 }
 
 func (s *State) save() {

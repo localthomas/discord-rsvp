@@ -3,6 +3,7 @@ package discord
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -35,7 +36,7 @@ func SendWebhookWithComponents(session *discordgo.Session, webhookID, token stri
 		uri += "?wait=true"
 	}
 
-	response, err := session.RequestWithBucketID("POST", uri, data, discordgo.EndpointWebhookToken("", ""))
+	response, err := session.RequestWithBucketID(http.MethodPost, uri, data, discordgo.EndpointWebhookToken("", ""))
 	if !wait || err != nil {
 		return nil, fmt.Errorf("could not make request: %w", err)
 	}
@@ -43,4 +44,14 @@ func SendWebhookWithComponents(session *discordgo.Session, webhookID, token stri
 	st := &discordgo.Message{}
 	err = json.Unmarshal(response, &st)
 	return st, err
+}
+
+func DeleteWebhookMessage(session *discordgo.Session, webhookID, token, messageID string) error {
+	uri := discordgo.EndpointWebhookToken(webhookID, token) + "/messages/" + messageID
+
+	_, err := session.RequestWithBucketID(http.MethodDelete, uri, nil, discordgo.EndpointWebhookToken("", ""))
+	if err != nil {
+		return fmt.Errorf("could not delete webhook message: %w", err)
+	}
+	return nil
 }
