@@ -38,7 +38,7 @@ func main() {
 		// never ending loop that executes tasks
 		for {
 			// check if the token needs to be refreshed
-			if time.Until(state.ExpiresAt) < 1*time.Hour {
+			if time.Until(state.ExpiresAt) < 1*time.Hour && state.RefreshToken != "" {
 				token, err := discord.RefreshToken(
 					config.ClientID,
 					config.ClientSecret,
