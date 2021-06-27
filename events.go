@@ -171,7 +171,7 @@ func createTitleMessage(eventTitle string, startTime time.Time) discord.WebhookW
 			Embeds: []*discordgo.MessageEmbed{
 				{
 					Title:       eventTitle,
-					Description: fmt.Sprintf("Event starts at %v", startTime.Format(time.RFC3339)),
+					Description: fmt.Sprintf("Event starts at %v", startTime.Format(time.RFC1123)),
 				},
 			},
 		},
