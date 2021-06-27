@@ -23,7 +23,7 @@ func handleEventScheduling(session *discordgo.Session, state *State, config Conf
 		for index, eventTime := range eventTimes {
 			wasAlreadyCreated := false
 			for _, alreadyCreated := range state.Events {
-				if alreadyCreated.Title == eventTitle && alreadyCreated.StartsAt == eventTime {
+				if alreadyCreated.Title == eventTitle && alreadyCreated.StartsAt.Equal(eventTime) {
 					wasAlreadyCreated = true
 					break
 				}

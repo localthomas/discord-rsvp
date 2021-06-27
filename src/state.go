@@ -68,7 +68,7 @@ func (s *State) RemoveRsvpEvent(title string, startsAt time.Time) {
 	// find the index of the event to delete it
 	index := -1
 	for i, event := range s.Events {
-		if event.Title == title && event.StartsAt == startsAt {
+		if event.Title == title && event.StartsAt.Equal(startsAt) {
 			index = i
 		}
 	}
