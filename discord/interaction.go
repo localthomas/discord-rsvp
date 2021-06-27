@@ -7,20 +7,19 @@ import (
 	"github.com/bsdlp/discord-interactions-go/interactions"
 )
 
-/*
-type Interaction struct {
-	Version int     `json:"version"`
-	Type    int     `json:"type"`
-	Token   string  `json:"token"`
-	Message Webhook `json:"message"`
-	ID      string  `json:"id"`
-	Data    Data    `json:"data"`
+type ButtonInteraction struct {
+	interactions.Data
+	DataInternal struct {
+		CustomID      string `json:"custom_id"`
+		ComponentType int    `json:"component_type"`
+	} `json:"data"`
+	Message WebhookWithComponent `json:"message"`
 }
 
-type Data struct {
-	CustomID string `json:"custom_id"`
+type ButtonInteractionResponse struct {
+	Type int                  `json:"type"`
+	Data WebhookWithComponent `json:"data"`
 }
-*/
 
 // Verify implements the Security and Authorization section of the Discord API.
 // https://discord.com/developers/docs/interactions/slash-commands#security-and-authorization
