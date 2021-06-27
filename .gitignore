@@ -1,5 +1,5 @@
 # ignore local config
-/config
+*/config
 
 # ignore the typical state directory
-/data
+*/data
