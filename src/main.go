@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/hex"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -17,6 +18,11 @@ const WebhookTokenEndpoint = "/webhook-token"
 const ConfigFilePath = "config/config.json"
 
 func main() {
+	portPointer := flag.Uint("p", 80, "the port number the HTTP server listens on")
+	flag.Parse()
+
+	port := *portPointer
+
 	config, err := ReadConfig(ConfigFilePath)
 	if err != nil {
 		log.Fatalf("could not read configuration from file %v: %v", ConfigFilePath, err)
@@ -115,5 +121,8 @@ func main() {
 		}
 		w.Write([]byte("Success!"))
 	}))
-	log.Fatal(http.ListenAndServe(":80", nil))
+
+	binding := fmt.Sprintf(":%v", port)
+	fmt.Println("listening on", binding)
+	log.Fatal(http.ListenAndServe(binding, nil))
 }
