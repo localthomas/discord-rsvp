@@ -131,7 +131,7 @@ loop:
 		case "never":
 			break loop
 		default:
-			log.Fatalf("unknown reapeat value of %v. Only daily and weekly are allowed\n", eventData.Repeat)
+			log.Fatalf("unknown reapeat value of %v. Only daily, weekly and never are allowed\n", eventData.Repeat)
 		}
 	}
 	return times
