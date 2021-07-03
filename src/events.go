@@ -140,6 +140,7 @@ func getPossibleTimes(eventData Event) []time.Time {
 	// check if there is the possibility that one of the repeating events
 	// is in the look ahead duration
 	possibleTimeToCheck := eventData.FirstTime
+loop:
 	for {
 		durationUntil := time.Until(possibleTimeToCheck)
 		if durationUntil > 0 &&
@@ -150,7 +151,7 @@ func getPossibleTimes(eventData Event) []time.Time {
 			times = append(times, possibleTimeToCheck)
 		} else if durationUntil > lookAheadDuration {
 			// the possibleTimeToCheck is so far into the future, that it even left the window
-			break
+			break loop
 		}
 
 		switch eventData.Repeat {
@@ -158,6 +159,8 @@ func getPossibleTimes(eventData Event) []time.Time {
 			possibleTimeToCheck = possibleTimeToCheck.AddDate(0, 0, 1)
 		case "weekly":
 			possibleTimeToCheck = possibleTimeToCheck.AddDate(0, 0, 7)
+		case "never":
+			break loop
 		default:
 			log.Fatalf("unknown reapeat value of %v. Only daily and weekly are allowed\n", eventData.Repeat)
 		}
