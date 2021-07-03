@@ -4,15 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/bsdlp/discord-interactions-go/interactions"
 	"github.com/localthomas/discord-rsvp/discord"
 )
 
 const CustomIDButtonAddUserToGame = "add_user_to_game"
-const CustomIDButtonRemoveUserFromGame = "remove_user_from_game"
+const CustomIDButtonRemoveUserFromEvent = "remove_user_from_event"
 
-type InteractionHandler func(w http.ResponseWriter, interaction discord.ButtonInteraction)
+type InteractionHandler func(w http.ResponseWriter, interaction discord.ButtonInteraction, argument string)
 
 type InteractionRouter struct {
 	customIDHandlerMapping map[string]InteractionHandler
@@ -57,12 +58,19 @@ func (i *InteractionRouter) interactionEndpointInternal(w http.ResponseWriter, r
 
 func (i *InteractionRouter) interactionHandler(w http.ResponseWriter, interaction discord.ButtonInteraction) {
 	customID := interaction.DataInternal.CustomID
+	// parse custom id as "command_with_underscores After the first whitespace, free text follows"
+	splitted := strings.SplitN(customID, " ", 2)
+	customID = splitted[0]
+	argument := ""
+	if len(splitted) > 1 {
+		argument = splitted[1]
+	}
 	handler, ok := i.customIDHandlerMapping[customID]
 	if !ok {
 		fmt.Printf("unknown custom_id: %v\n", customID)
 		return
 	}
-	handler(w, interaction)
+	handler(w, interaction, argument)
 }
 
 func writeJSON(w http.ResponseWriter, data interface{}) error {

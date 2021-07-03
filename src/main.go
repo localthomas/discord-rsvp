@@ -91,7 +91,7 @@ func main() {
 
 	handlerRouter := api.NewInteractionRouter()
 	handlerRouter.RegisterHandler(api.CustomIDButtonAddUserToGame, api.HandleAddUserToGame)
-	handlerRouter.RegisterHandler(api.CustomIDButtonRemoveUserFromGame, api.HandleRemoveUserfromGame)
+	handlerRouter.RegisterHandler(api.CustomIDButtonRemoveUserFromEvent, api.HandleRemoveUserFromEvent)
 
 	http.Handle("/", handlerRouter.InteractionEndpoint(discordPubkey))
 	http.Handle(WebhookTokenEndpoint, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

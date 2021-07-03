@@ -24,12 +24,11 @@ type State struct {
 
 // RsvpEvent stores the webhook message ids for an event that is currently in the rsvp phase.
 type RsvpEvent struct {
-	Title          string
-	StartsAt       time.Time
-	WebhookID      string
-	WebhookToken   string
-	TitleMessageID string
-	GameMessageIDs map[string]string
+	Title        string
+	StartsAt     time.Time
+	WebhookID    string
+	WebhookToken string
+	MessageID    string
 }
 
 func ResumeState() State {

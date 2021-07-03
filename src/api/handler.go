@@ -9,16 +9,37 @@ import (
 	"github.com/localthomas/discord-rsvp/discord"
 )
 
-func HandleAddUserToGame(w http.ResponseWriter, interaction discord.ButtonInteraction) {
-	embed, err := extractEmbed(interaction)
-	if err != nil {
-		fmt.Printf("could not extract embed from interaction: %v\n", err)
-		return
+func HandleAddUserToGame(w http.ResponseWriter, interaction discord.ButtonInteraction, argument string) {
+	embed := &discordgo.MessageEmbed{}
+	if len(interaction.Message.Embeds) > 1 {
+		embed = interaction.Message.Embeds[1]
+	} else {
+		interaction.Message.Embeds = append(interaction.Message.Embeds, embed)
 	}
 
-	// add the user that pressed the button to the field with all users that were added
+	embed.Title = "Attendees"
+	embed.Color = 0x3ba55d
+
+	// add the user that pressed the button to the embed with all users that were added to a game
 	userID := interaction.Member.User.ID
-	users := stringToUserList(embed.Fields[0].Value)
+	var field *discordgo.MessageEmbedField
+	// find the field for the game
+	for _, fieldToTest := range embed.Fields {
+		if fieldToTest.Name == argument {
+			field = fieldToTest
+			break
+		}
+	}
+	if field == nil {
+		// create a new field with default values
+		field = &discordgo.MessageEmbedField{
+			Name:   argument,
+			Inline: true,
+		}
+		embed.Fields = append(embed.Fields, field)
+	}
+
+	users := stringToUserList(field.Value)
 	// check if user is already in the list
 	alreadyExists := false
 	for _, user := range users {
@@ -30,69 +51,72 @@ func HandleAddUserToGame(w http.ResponseWriter, interaction discord.ButtonIntera
 	if !alreadyExists {
 		users = append(users, userID)
 	}
-	embed.Fields[0].Value = userListToString(users)
+	field.Value = userListToString(users)
 
-	writeResponse(w, embed)
+	writeResponse(w, interaction.Message)
 }
 
-func HandleRemoveUserfromGame(w http.ResponseWriter, interaction discord.ButtonInteraction) {
-	embed, err := extractEmbed(interaction)
-	if err != nil {
-		fmt.Printf("could not extract embed from interaction: %v\n", err)
+func HandleRemoveUserFromEvent(w http.ResponseWriter, interaction discord.ButtonInteraction, argument string) {
+	var embed *discordgo.MessageEmbed
+	if len(interaction.Message.Embeds) > 1 {
+		embed = interaction.Message.Embeds[1]
+	} else {
+		// do nothing, if no embed for the attendees was found
+		writeResponse(w, interaction.Message)
 		return
 	}
 
-	// remove the user that pressed the button from the field with all users that were added
+	// remove the user that pressed the button from all the fields
 	userID := interaction.Member.User.ID
-	users := stringToUserList(embed.Fields[0].Value)
-	for index, user := range users {
-		if user == userID {
-			if index+1 == len(users) {
-				users = users[:index]
-			} else {
-				users = append(users[:index], users[index+1:]...)
+	for i := 0; i < len(embed.Fields); i++ {
+		users := stringToUserList(embed.Fields[i].Value)
+		for index, user := range users {
+			if user == userID {
+				if index+1 == len(users) {
+					users = users[:index]
+				} else {
+					users = append(users[:index], users[index+1:]...)
+				}
+				break
 			}
-			break
+		}
+		// special case: when the list of users is empty, just remove the field
+		if len(users) == 0 {
+			// remove routine
+			if i+1 == len(embed.Fields) {
+				embed.Fields = embed.Fields[:i]
+			} else {
+				embed.Fields = append(embed.Fields[:i], embed.Fields[i+1:]...)
+			}
+			i-- // since one field was removed, the list length is now -1 and the next element got a new index: i-1
+		} else {
+			embed.Fields[i].Value = userListToString(users)
 		}
 	}
-	// special case: when the list of users is empty, just remove the field
-	if len(users) == 0 {
-		embed.Fields = nil
-	} else {
-		embed.Fields[0].Value = userListToString(users)
+
+	// special case: if no fields are on the embed, remove it
+	if len(embed.Fields) == 0 {
+		interaction.Message.Embeds = interaction.Message.Embeds[:1]
 	}
 
-	writeResponse(w, embed)
+	writeResponse(w, interaction.Message)
 }
 
 func extractEmbed(interaction discord.ButtonInteraction) (*discordgo.MessageEmbed, error) {
 	// extract the current embed from the interaction
 	var embed *discordgo.MessageEmbed
-	if len(interaction.Message.Embeds) > 0 {
-		embed = interaction.Message.Embeds[0]
-		if len(embed.Fields) == 0 {
-			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{
-				Name:   "Accepted",
-				Value:  "",
-				Inline: true,
-			})
-		}
+	if len(interaction.Message.Embeds) > 1 {
+		embed = interaction.Message.Embeds[1]
 	} else {
-		return nil, fmt.Errorf("unknown state: message did not have embed")
+		embed = &discordgo.MessageEmbed{}
 	}
 	return embed, nil
 }
 
-func writeResponse(w http.ResponseWriter, embed *discordgo.MessageEmbed) {
+func writeResponse(w http.ResponseWriter, message discord.WebhookWithComponent) {
 	response := discord.ButtonInteractionResponse{
 		Type: 7,
-		Data: discord.WebhookWithComponent{
-			WebhookParams: discordgo.WebhookParams{
-				Embeds: []*discordgo.MessageEmbed{
-					embed,
-				},
-			},
-		},
+		Data: message,
 	}
 	err := writeJSON(w, response)
 	if err != nil {

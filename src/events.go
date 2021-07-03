@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"sort"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -58,15 +59,9 @@ func handleEventScheduling(session *discordgo.Session, state *State, config Conf
 		durationUntil := time.Until(event.StartsAt)
 		if durationUntil < graceDuration {
 			// event is in the past, delete it
-			err := discord.DeleteWebhookMessage(session, event.WebhookID, event.WebhookToken, event.TitleMessageID)
+			err := discord.DeleteWebhookMessage(session, event.WebhookID, event.WebhookToken, event.MessageID)
 			if err != nil {
-				fmt.Printf("could not delete title message of event %v: %v\n", event.Title, err)
-			}
-			for gameTitle, messageID := range event.GameMessageIDs {
-				err := discord.DeleteWebhookMessage(session, event.WebhookID, event.WebhookToken, messageID)
-				if err != nil {
-					fmt.Printf("could not delete game message of event %v with game %v: %v\n", event.Title, gameTitle, err)
-				}
+				fmt.Printf("could not delete message of event %v: %v\n", event.Title, err)
 			}
 			// propegate the change to the state
 			state.RemoveRsvpEvent(event.Title, event.StartsAt)
@@ -84,7 +79,7 @@ func addEvent(
 	// one "title message" that contains info about the event itself
 	webhookID := state.WebhookID
 	webhookToken := state.WebhookToken
-	message := createTitleMessage(eventTitle, startTime)
+	message := createEventMessage(eventTitle, startTime, config.Games)
 	messageReturn, err := discord.SendWebhookWithComponents(
 		session,
 		webhookID,
@@ -93,42 +88,16 @@ func addEvent(
 		message,
 	)
 	if err != nil {
-		return fmt.Errorf("could not send title webhook message: %w", err)
+		return fmt.Errorf("could not send webhook message: %w", err)
 	}
-	titleMessageID := messageReturn.ID
-
-	// create one message per game
-	// if any error happens, the already created messages are deleted
-	createdMessages := make(map[string]string)
-	for gameTitle, gameDescription := range config.Games {
-		message := createGameMessage(gameTitle, gameDescription)
-		messageReturn, err := discord.SendWebhookWithComponents(
-			session,
-			webhookID,
-			webhookToken,
-			true,
-			message,
-		)
-		if err != nil {
-			// delete already created messages
-			for _, messageID := range createdMessages {
-				err = discord.DeleteWebhookMessage(session, webhookID, webhookToken, messageID)
-				if err != nil {
-					fmt.Printf("could not delete message prior to returning error: %v\n", err)
-				}
-			}
-			return fmt.Errorf("could not send webhook message: %w", err)
-		}
-		createdMessages[gameTitle] = messageReturn.ID
-	}
+	messageID := messageReturn.ID
 
 	state.AddRsvpEvent(RsvpEvent{
-		TitleMessageID: titleMessageID,
-		Title:          eventTitle,
-		StartsAt:       startTime,
-		WebhookID:      webhookID,
-		WebhookToken:   webhookToken,
-		GameMessageIDs: createdMessages,
+		MessageID:    messageID,
+		Title:        eventTitle,
+		StartsAt:     startTime,
+		WebhookID:    webhookID,
+		WebhookToken: webhookToken,
 	})
 	return nil
 }
@@ -168,47 +137,121 @@ loop:
 	return times
 }
 
-func createTitleMessage(eventTitle string, startTime time.Time) discord.WebhookWithComponent {
+func createEventMessage(eventTitle string, startTime time.Time, games map[string]string) discord.WebhookWithComponent {
+	// create a list of game names and descriptions and sort them
+	gamesList := gamesToList(games)
+
+	// prepare buttons for each game
+	// Note: maximum amount of buttons in one actionRow is 5
+	buttons := []discord.Component{}
+	counter := 0
+	tmpButtons := []discord.Component{}
+	for _, game := range gamesList {
+		tmpButtons = append(tmpButtons, discord.Component{
+			Type:     2,
+			Label:    game.Title,
+			Style:    3, // Green / Success Button
+			CustomID: api.CustomIDButtonAddUserToGame + " " + game.Title,
+		})
+		if counter < 4 {
+			counter++
+		} else {
+			counter = 0
+			buttons = append(buttons, discord.Component{
+				Type:       1,
+				Components: tmpButtons,
+			})
+			tmpButtons = []discord.Component{}
+		}
+	}
+	// if tmpButtons still contains elements, add them to the end
+	if len(tmpButtons) > 0 {
+		buttons = append(buttons, discord.Component{
+			Type:       1,
+			Components: tmpButtons,
+		})
+	}
+	// add remove button last
+	buttons = append(buttons, discord.Component{
+		Type: 1,
+		Components: []discord.Component{
+			{
+				Type:     2,
+				Label:    "Remove Me",
+				Style:    4, // Red / Danger Button
+				CustomID: api.CustomIDButtonRemoveUserFromEvent,
+			},
+		},
+	})
+
+	// prepare info fields for each game
+	fields := []*discordgo.MessageEmbedField{}
+	for _, game := range gamesList {
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   game.Title,
+			Value:  game.Description,
+			Inline: true,
+		})
+	}
+
 	return discord.WebhookWithComponent{
 		WebhookParams: discordgo.WebhookParams{
 			Embeds: []*discordgo.MessageEmbed{
 				{
 					Title:       eventTitle,
-					Description: fmt.Sprintf("Event starts at %v", startTime.Format(time.RFC1123)),
+					Description: fmt.Sprintf("Event starts at %v.\nSelect the games you want to play via the buttons below.", startTime.Format(time.RFC1123)),
+					Color:       0x01579b,
+					Fields:      fields,
 				},
 			},
 		},
+		Components: buttons,
 	}
 }
 
-func createGameMessage(gameTitle, gameDescription string) discord.WebhookWithComponent {
-	return discord.WebhookWithComponent{
-		WebhookParams: discordgo.WebhookParams{
-			Embeds: []*discordgo.MessageEmbed{
-				{
-					Title:       gameTitle,
-					Description: gameDescription,
-				},
-			},
-		},
-		Components: []discord.Component{
-			{
-				Type: 1,
-				Components: []discord.Component{
-					{
-						Type:     2,
-						Label:    "Add Me",
-						Style:    3, // Green / Success Button
-						CustomID: api.CustomIDButtonAddUserToGame,
-					},
-					{
-						Type:     2,
-						Label:    "Remove Me",
-						Style:    4, // Red / Danger Button
-						CustomID: api.CustomIDButtonRemoveUserFromGame,
-					},
-				},
-			},
+type gameEntry struct {
+	Title       string
+	Description string
+}
+
+// gameEntrySorter joins a By function and a slice of gameEntries to be sorted.
+type gameEntrySorter struct {
+	games []gameEntry
+	by    func(p1, p2 *gameEntry) bool // Closure used in the Less method.
+}
+
+// Len is part of sort.Interface.
+func (g *gameEntrySorter) Len() int {
+	return len(g.games)
+}
+
+// Swap is part of sort.Interface.
+func (g *gameEntrySorter) Swap(i, j int) {
+	g.games[i], g.games[j] = g.games[j], g.games[i]
+}
+
+// Less is part of sort.Interface. It is implemented by calling the "by" closure in the sorter.
+func (g *gameEntrySorter) Less(i, j int) bool {
+	return g.by(&g.games[i], &g.games[j])
+}
+
+func gamesToList(games map[string]string) []gameEntry {
+	list := []gameEntry{}
+	for title, description := range games {
+		list = append(list, gameEntry{
+			Title:       title,
+			Description: description,
+		})
+	}
+
+	// sort by title
+	sorter := &gameEntrySorter{
+		games: list,
+		by: func(p1, p2 *gameEntry) bool {
+			return p1.Title < p2.Title
 		},
 	}
+	sort.Sort(sorter)
+
+	return list
 }
