@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/ed25519"
 	"encoding/hex"
 	"flag"
 	"fmt"
@@ -29,7 +30,11 @@ func main() {
 	}
 	discordPubkey, err := hex.DecodeString(config.HexEncodedDiscordPublicKey)
 	if err != nil {
-		log.Fatalf("could not decode public key: %v", err)
+		log.Fatalf("could not decode public key (HexEncodedDiscordPublicKey) as hex string: %v", err)
+	}
+	// check that the public key has the correct length for an ed25519 public key
+	if len(discordPubkey) != ed25519.PublicKeySize {
+		log.Fatalf("incorrect public key (HexEncodedDiscordPublicKey) size of %v bytes after hex decoding", len(discordPubkey))
 	}
 
 	state := ResumeState()
