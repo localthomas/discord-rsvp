@@ -13,13 +13,22 @@ Each event then gets one message attached for a game, which are configured globa
 A host for running containers (e.g. docker or podman) that has valid DNS configuration and a HTTPS proxy with valid certificates for the host.
 
 A registered Discord [application](https://discord.com/developers/applications) with a configured interactions endpoint URL and an OAuth2 redirect URL.
+The interactions endpoint URL can be set under *General Information* and the OAuth2 Redirect URL can be set under *OAuth2* and then *Redirects*.
 
-The URL must follow the following schema:
+The URLs must follow the following schema:
 
 | Setting | Value |
 | ------- | ----- |
 | Interactions Endpoint URL | `https://example.org` |
 | OAuth2 Redirect URL | `https://example.org/webhook-token` |
+
+Note that to set the Interactions Endpoint URL, these steps have to be taken in the specific order:
+
+1. Create a Discord [application](https://discord.com/developers/applications)
+2. Copy the values to the config.json (see [configuration](#configuration) for more information)
+3. Start the service; Must be accessible via HTTPS with valid certificates
+4. Then enter the endpoint URL (see table above); If Discord could not verify the URL, check that the service is reachable via HTTPS
+5. Activate the service for a channel (see [First Run](#first-run) for more information)
 
 ### Installation
 
@@ -31,6 +40,12 @@ The state should be persistent and is stored in the container under `/data`.
 The configuration is accessible in the container via `/config/config.json`.
 
 ## Configuration
+
+The apps public key (`HexEncodedDiscordPublicKey`) can be found under [applications](https://discord.com/developers/applications), *General Information* and then *Public Key*.
+The value can be copied as is.
+
+The `ClientID` and `clientSecret` can be found under [applications](https://discord.com/developers/applications), *OAuth2* and then *Client Information*.
+The values can be copied as is.
 
 An exemplary configuration for the `config.json` file can be found below:
 
@@ -53,7 +68,7 @@ An exemplary configuration for the `config.json` file can be found below:
 }
 ```
 
-`ClientID` and `ClientSecret` refer to the values given for the Discord [application](https://discord.com/developers/applications) under the OAuth2 tab.
+Values for repeating events can be `weekly`, `daily` and `never`.
 
 ## First Run
 
