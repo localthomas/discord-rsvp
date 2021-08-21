@@ -10,7 +10,9 @@ Each event then gets one message attached for a game, which are configured globa
 
 ### Requirements
 
-A Discord [application](https://discord.com/developers/applications) with a configured interactions endpoint URL and an OAuth2 redirect URL.
+A host for running containers (e.g. docker or podman) that has valid DNS configuration and a HTTPS proxy with valid certificates for the host.
+
+A registered Discord [application](https://discord.com/developers/applications) with a configured interactions endpoint URL and an OAuth2 redirect URL.
 
 The URL must follow the following schema:
 
@@ -50,6 +52,8 @@ An exemplary configuration for the `config.json` file can be found below:
     }
 }
 ```
+
+`ClientID` and `ClientSecret` refer to the values given for the Discord [application](https://discord.com/developers/applications) under the OAuth2 tab.
 
 ## First Run
 
