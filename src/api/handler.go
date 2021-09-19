@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -94,7 +95,7 @@ func HandleRemoveUserFromEvent(w http.ResponseWriter, interaction discord.Button
 		} else {
 			embed.Fields[i].Value = userListToString(users)
 			// set the field title to "Game (2)", where 2 is the number of users (attendees)
-			embed.Fields[i].Name = argument + fmt.Sprintf(" (%v)", len(users))
+			embed.Fields[i].Name = extractGameNameFromFieldName(embed.Fields[i].Name) + fmt.Sprintf(" (%v)", len(users))
 		}
 	}
 
@@ -104,6 +105,12 @@ func HandleRemoveUserFromEvent(w http.ResponseWriter, interaction discord.Button
 	}
 
 	writeResponse(w, interaction.Message)
+}
+
+func extractGameNameFromFieldName(fieldName string) string {
+	expression := regexp.MustCompile(`(.*) \([0-9]+\)$`)
+	matches := expression.FindStringSubmatch(fieldName)
+	return matches[1]
 }
 
 func extractEmbed(interaction discord.ButtonInteraction) (*discordgo.MessageEmbed, error) {
