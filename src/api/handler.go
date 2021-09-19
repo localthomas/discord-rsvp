@@ -110,7 +110,11 @@ func HandleRemoveUserFromEvent(w http.ResponseWriter, interaction discord.Button
 func extractGameNameFromFieldName(fieldName string) string {
 	expression := regexp.MustCompile(`(.*) \([0-9]+\)$`)
 	matches := expression.FindStringSubmatch(fieldName)
-	return matches[1]
+	if len(matches) >= 2 {
+		return matches[1]
+	} else {
+		return ""
+	}
 }
 
 func extractEmbed(interaction discord.ButtonInteraction) (*discordgo.MessageEmbed, error) {
