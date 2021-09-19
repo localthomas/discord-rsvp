@@ -25,7 +25,7 @@ func HandleAddUserToGame(w http.ResponseWriter, interaction discord.ButtonIntera
 	var field *discordgo.MessageEmbedField
 	// find the field for the game
 	for _, fieldToTest := range embed.Fields {
-		if fieldToTest.Name == argument {
+		if strings.HasPrefix(fieldToTest.Name, argument) {
 			field = fieldToTest
 			break
 		}
@@ -52,6 +52,8 @@ func HandleAddUserToGame(w http.ResponseWriter, interaction discord.ButtonIntera
 		users = append(users, userID)
 	}
 	field.Value = userListToString(users)
+	// set the filed title to "Game (2)", where 2 is the number of users (attendees)
+	field.Name = argument + fmt.Sprintf(" (%v)", len(users))
 
 	writeResponse(w, interaction.Message)
 }
