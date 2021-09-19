@@ -52,7 +52,7 @@ func HandleAddUserToGame(w http.ResponseWriter, interaction discord.ButtonIntera
 		users = append(users, userID)
 	}
 	field.Value = userListToString(users)
-	// set the filed title to "Game (2)", where 2 is the number of users (attendees)
+	// set the field title to "Game (2)", where 2 is the number of users (attendees)
 	field.Name = argument + fmt.Sprintf(" (%v)", len(users))
 
 	writeResponse(w, interaction.Message)
@@ -93,6 +93,8 @@ func HandleRemoveUserFromEvent(w http.ResponseWriter, interaction discord.Button
 			i-- // since one field was removed, the list length is now -1 and the next element got a new index: i-1
 		} else {
 			embed.Fields[i].Value = userListToString(users)
+			// set the field title to "Game (2)", where 2 is the number of users (attendees)
+			embed.Fields[i].Name = argument + fmt.Sprintf(" (%v)", len(users))
 		}
 	}
 
