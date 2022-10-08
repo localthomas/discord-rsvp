@@ -1,5 +1,10 @@
 # discord-rsvp
 
+[![Project Status: Abandoned – Initial development has started, but there has not yet been a stable, usable release; the project has been abandoned and the author(s) do not intend on continuing development.](https://www.repostatus.org/badges/latest/abandoned.svg)](https://www.repostatus.org/#abandoned)
+
+*The project has been abandoned and there is no intent for further development.*
+*However, pull requests will be merged as time allows.*
+
 This project implements a simple Discord Bot that creates webhook messages in a user-selected channel and provides an update mechanism for these messages.
 A message can be updated by buttons that appear under the created messages and allow user input by everyone on the server/guild.
 
